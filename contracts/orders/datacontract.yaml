@@ -1,12 +1,10 @@
 kind: "DataContract"
 apiVersion: "v3.1.0"
 id: "urn:datacontract:orders:v1"
-name: "orders_data_contract"
+name: "teste_schemas"
 version: "1.0.0"
 status: "active"
 domain: "sales"
-tags:
-  - "demo"
 description:
   purpose: "Provides order and line item data for analytics and reporting"
   usage: "Used by analytics team for sales analysis and business intelligence"
@@ -20,7 +18,7 @@ description:
       type: "GDPR Policy"
       description: "GDPR compliance policy for handling customer data"
 schema:
-  - name: "orders"
+  - name: "table_source_1"
     logicalType: "object"
     physicalType: "table"
     description: "All successful and cancelled web-shop orders since 2020-01-01"
@@ -31,7 +29,7 @@ schema:
         description: "If the row count is less than 100,000, something is wrong"
         dimension: "completeness"
     properties:
-      - name: "order_id"
+      - name: "col_a_pk"
         businessName: "Order Identifier"
         logicalType: "string"
         physicalType: "uuid"
@@ -41,7 +39,7 @@ schema:
         classification: "internal"
         examples:
           - "123e4567-e89b-12d3-a456-426614174000"
-      - name: "customer_id"
+      - name: "col_b"
         businessName: "Customer Identifier"
         logicalType: "string"
         physicalType: "text"
@@ -50,79 +48,11 @@ schema:
         classification: "public"
         examples:
           - "1000000001"
-      - name: "order_total"
-        businessName: "Total Order Amount"
-        logicalType: "integer"
-        physicalType: "integer"
-        description: "Total order amount in cent"
-        required: true
-        classification: "internal"
-        examples:
-          - 9999
-        logicalTypeOptions:
-          minimum: 0
-      - name: "order_timestamp"
-        businessName: "Order Date"
-        logicalType: "timestamp"
-        physicalType: "timestamptz"
-        description: "Date and time when order was placed in UTC time zone"
-        required: true
-        partitioned: true
-        partitionKeyPosition: 1
-        classification: "internal"
-        examples:
-          - "2025-11-23 11:40:26.456654+00"
-      - name: "order_status"
-        businessName: "Status"
-        description: "The business status of the order"
-        logicalType: "string"
-        physicalType: "text"
-        examples:
-          - "shipped"
-        quality:
-          - type: "library"
-            description: "Ensure that there are no other status values."
-            metric: "invalidValues"
-            arguments:
-              validValues:
-                - "pending"
-                - "paid"
-                - "processing"
-                - "shipped"
-                - "delivered"
-                - "cancelled"
-                - "refunded"
-            mustBe: 0
-  - name: "line_items"
+  - name: "table_aux_1"
     physicalType: "table"
     description: "Details for each item in an order"
     properties:
-      - name: "line_item_id"
-        logicalType: "string"
-        description: "Unique identifier for the line item"
-        physicalType: "uuid"
-        examples:
-          - "12c9ba21-0c44-4e29-ba72-b8fd01c1be30"
-        logicalTypeOptions:
-          format: "uuid"
-        required: true
-        primaryKey: true
-      - name: "sku"
-        logicalType: "string"
-        businessName: "Stock Keeping Unit"
-        description: "Identifier for the purchased product"
-        physicalType: "text"
-        examples:
-          - 111222333
-        required: true
-      - name: "price"
-        logicalType: "integer"
-        description: "Price in cents for this line item including tax"
-        physicalType: "integer"
-        examples:
-          - 9999
-        required: true
-      - name: "order_id"
+      - name: "col_a_fk"
         required: false
         primaryKey: false
         logicalType: "string"
@@ -130,7 +60,69 @@ schema:
         description: "Reference to the order that this line item belongs to"
         relationships:
           - type: "foreignKey"
-            to: "orders.order_id"
+            to: "table_source_1.col_a_pk"
+      - name: "col_c"
+        logicalType: "integer"
+        description: "Price in cents for this line item including tax"
+        physicalType: "integer"
+        examples:
+          - 9999
+        required: true
+  - name: "table_source_2"
+    businessName: ""
+    description: ""
+    type: "object"
+    properties:
+      - name: "col_a_pk"
+        logicalType: "string"
+        description: ""
+        primaryKey: true
+      - name: "col_y"
+        logicalType: "string"
+        description: ""
+  - name: "table_aux_2"
+    businessName: ""
+    description: ""
+    type: "object"
+    properties:
+      - name: "col_a_fk"
+        logicalType: "string"
+        description: ""
+        relationships:
+          - type: "foreignKey"
+            to: "table_source_2.col_a_pk"
+            description: ""
+      - name: "col_x"
+        logicalType: "string"
+        description: ""
+  - name: "table_join"
+    businessName: ""
+    description: ""
+    type: "object"
+    properties:
+      - name: "col_a"
+        logicalType: "string"
+        description: ""
+        primaryKey: true
+        relationships:
+          - type: "foreignKey"
+            to: "table_source_1.col_a_pk"
+            description: ""
+          - type: "foreignKey"
+            to: "table_source_2.col_a_pk"
+            description: ""
+      - name: "col_b"
+        logicalType: "date"
+        description: ""
+      - name: "col_c"
+        logicalType: "string"
+        description: ""
+      - name: "col_y"
+        logicalType: "string"
+        description: ""
+      - name: "col_x"
+        logicalType: "string"
+        description: ""
 servers:
   - server: "postgres"
     environment: "demo"
@@ -176,7 +168,6 @@ slaProperties:
   - property: "freshness"
     value: 24
     unit: "hours"
-#    element: "orders.order_timestamp"
     driver: "operational"
     description: "Order data is refreshed within 24 hours of order placement"
   - property: "retention"
