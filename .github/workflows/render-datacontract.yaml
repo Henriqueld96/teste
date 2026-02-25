@@ -1,0 +1,75 @@
+name: Render Data Contract to HTML and Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'datacontract.yaml'     # Só roda se o arquivo mudar
+      - '.github/workflows/render-datacontract.yaml'
+  workflow_dispatch:            # Permite executar manualmente
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Instalar datacontract-cli
+        run: |
+          python -m pip install --upgrade pip
+          pip install 'datacontract-cli[all]'
+
+      - name: 🔍 Validar YAML (Lint)
+        run: |
+          datacontract lint datacontract.yaml
+
+      - name: 🎨 Gerar HTML a partir do ODCS YAML
+        run: |
+          mkdir -p docs
+          datacontract export --format html \
+            --output docs/index.html \
+            datacontract.yaml
+
+      - name: 📄 Criar página de índice (opcional)
+        run: |
+          cat > docs/README.md << 'EOF'
+          # Data Contract Documentation
+          
+          Documentação gerada automaticamente pelo GitHub Actions.
+          
+          [Ver Contrato de Dados](./index.html)
+          EOF
+
+      - name: 🚀 Upload artefatos
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: 'docs'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+
+      - name: 🌐 Deploy para GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

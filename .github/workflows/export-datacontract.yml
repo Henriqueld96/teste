@@ -1,0 +1,38 @@
+name: Export Data Contract to HTML
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'datacontract.yaml'
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install datacontract-cli
+        run: pip install datacontract-cli
+      
+      - name: Create docs directory
+        run: mkdir -p docs
+      
+      - name: Export Data Contract to HTML
+        run: datacontract export --format html --output docs/index.html datacontract.yaml
+      
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git commit -m "docs: update data contract HTML export" || true
+          git push
